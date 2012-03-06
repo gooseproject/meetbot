@@ -92,6 +92,14 @@ class Config(object):
                          "Minutes:        %(urlBasename)s.html\n"
                          "Minutes (text): %(urlBasename)s.txt\n"
                          "Log:            %(urlBasename)s.log.html")
+    # email sending stuff
+    endMeetingEmailTo = ""
+    endMeetingEmailFrom = ""
+    endMeetingEmailSubject = ""
+    endMeetingEmailServer = ""
+    endMeetingEmailUser = ""
+    endMeetingEmailPassword = ""
+
     # Input/output codecs.
     input_codec = 'utf-8'
     output_codec = 'utf-8'
@@ -319,6 +327,39 @@ class MeetingCommands(object):
         message = self.config.endMeetingMessage%repl
         for messageline in message.split('\n'):
             self.reply(messageline)
+        if (self.config.endMeetingEmailTo and self.config.endMeetingEmailFrom and self.config.endMeetingEmailSubject and self.config.endMeetingEmailServer):
+            ## sending email code ##
+            import smtplib
+            import email.utils
+            from email import MIMEText
+            ###
+            msg = MIMEText.MIMEText(message)
+            msg['Subject'] = self.config.endMeetingEmailSubject%repl
+            msg['To'] = self.config.endMeetingEmailTo
+            msg['From'] = self.config.endMeetingEmailFrom
+            self.reply('sending meeting email')
+
+            sender = smtplib.SMTP(self.config.endMeetingEmailServer)
+            try:
+                sender.set_debuglevel(self.config.endMeetingEmailDebug)
+            
+                # identify ourselves, prompting sender for supported features
+                sender.ehlo()
+            
+                # If we can encrypt this session, do it
+                if sender.has_extn('STARTTLS'):
+                    sender.starttls()
+                    sender.ehlo() # re-identify ourselves over TLS connection
+            
+		if (self.config.endMeetingEmailUser and self.config.endMeetingEmailPassword):
+		    sender.login(self.config.endMeetingEmailUser, self.config.endMeetingEmailPassword)
+
+                sender.sendmail(self.config.endMeetingEmailFrom, [self.config.endMeetingEmailTo], msg.as_string())
+            finally:
+                sender.quit()
+        else:
+            self.reply('not sending meeting email -- check config settings')
+
         self._meetingIsOver = True
     def do_topic(self, nick, line, **kwargs):
         """Set a new topic in the channel."""

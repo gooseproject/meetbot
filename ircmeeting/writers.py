@@ -116,6 +116,7 @@ class _BaseWriter(object):
                 'endtime':time.strftime("%H:%M:%S", self.M.endtime),
                 'timeZone':self.M.config.timeZone,
                 'fullLogs':self.M.config.basename+'.log.html',
+                'baseName':self.M.config.basename,
                 'fullLogsFullURL':self.M.config.filename(url=True)+'.log.html',
                 'MeetBotInfoURL':self.M.config.MeetBotInfoURL,
                 'MeetBotVersion':MeetBotVersion(),
@@ -763,16 +764,21 @@ class HTML2(_BaseWriter, _CSSmanager):
         return html
 HTML = HTML2
 
-class MultiMarkDown(_BaseWriter):
+class MultiMarkdown(_BaseWriter):
 
     body = textwrap.dedent("""\
-    %(titleBlock)s
+    ---
+    layout: one_col
+    title: Meeting Notes %(pageTitle)s
+    name: %(baseName)s
+    ---
+
     %(pageTitle)s
     %(titleBlock)s
 
 
     sWRAPsMeeting started by %(owner)s at %(starttime)s %(timeZone)s.
-    The [full logs](%(fullLogs)s are available.eWRAPe
+    The [full logs](%(fullLogs)s) are available.eWRAPe
 
     Meeting summary
     ---------------
@@ -877,6 +883,9 @@ class MultiMarkDown(_BaseWriter):
         body = self.body
         body = body%repl
         body = replaceWRAP(body)
+        dummy = open('dummy', 'w')
+        dummy.write(body)
+        dummy.close()
         return body
 
 class ReST(_BaseWriter):
